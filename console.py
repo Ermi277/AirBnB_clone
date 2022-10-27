@@ -2,6 +2,7 @@
 """Defines the entry point of the command interpreter HBNBCommand"""
 
 import cmd
+import re
 from models.base_model import BaseModel
 from models import storage
 
@@ -63,6 +64,16 @@ class HBNBCommand(cmd.Cmd):
         if not validate_classname(args, chk_id=True):
             return
 
+        instance_objs = storage.all()
+        key = "{}.{}".format(args[0], args[1])
+        chk_instance = instance_objs.get(key, None)
+        if chk_instance is None:
+            print("** no instance found **")
+            return
+
+        del instance_objs[key]
+        storage.save()
+
     def do_all(self, arg):
         """
             Prints all string representation of all instances based or not on
@@ -83,7 +94,41 @@ class HBNBCommand(cmd.Cmd):
         print(["{}".format(str(v)) for _, v in 
             all_objs.items() if type(v).__name__ == args[0]])
         return
-        
+    def do_update(self, arg: str):
+        """Updates an instance based on the class name and id
+        """
+        args = arg.split(maxsplit=3)
+        if not validate_classname(args, chk_id=True):
+            return
+
+        instance_objs = storage.all()
+        key ="{}.{}".format(args[0], args[1])
+        chk_instance = instance_objs.get(key, None)
+        if chk_instance is None:
+            print("** no instance found **")
+            return
+
+        match_json = re.findall(r"{.*}", arg)
+        if match_json:
+            payload = None
+            try:
+                payload: dict = json.loads(match_json[0])
+            except Exception:
+                print("** invalid syntax")
+                return
+            for k, v in payload.items():
+                setattr(chk_instance, k, v)
+                storage.save()
+                return
+            if not validate_attrs(args):
+                return
+            first_attr = re.findall(r"^[\"\'](.*?)[\"\']", args[3])
+            if first_attr:
+                setattr(chk_instance, args[2], first_attr[0])
+            else:
+                value_list = args[3].split()
+                setattr(chk_instance, args[2], parse_str(value_list[0]))
+            storage.save()
 def validate_classname(args, chk_id=False):
     """Check if class_name exist or checks if it is entered"""
 
@@ -100,7 +145,20 @@ def validate_classname(args, chk_id=False):
         return False
 
     return True  
-           
+
+def validate_attrs(args):
+    """
+        Runs checks on args to validate classname attributes and validate
+    """
+
+    if len(args) < 3:
+        print("** attribute name missing **")
+        return False
+    if len(args) < 4:
+        print("** value missing **")
+        return False
+    return True
+
 
 if __name__ == '__main__':
     HBNBCommand().cmdloop()
