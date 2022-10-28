@@ -3,6 +3,8 @@
 
 import os
 import json
+from models.base_model import BaseModel
+from models.user import User
 
 class FileStorage:
     """Serializes and deserializes instance from and to JSON  file """
@@ -22,11 +24,13 @@ class FileStorage:
             json.dump({k: v.to_dict() for k,v in self.__objects.items()}, f)
 
     def reload(self):
+
+        used_classes = {'BaseModel': BaseModel, 'User': User}
         if not os.path.exists(self.__file_path):
             return
 
         with open(self.__file_path, 'r') as f:
-            dsd = None
+            dsd = None 
 
             try:
                 dsd = json.load(f)
@@ -35,4 +39,7 @@ class FileStorage:
 
             if dsd is None:
                 return
+
+            FileStorage.__objects = {k: used_classes[k.split('.')[0]](**v)
+                                    for k, v in dsd.items()}
 

@@ -6,7 +6,7 @@ import re
 from models.base_model import BaseModel
 from models import storage
 
-used_classes = {'BaseModel': BaseModel}
+used_classes = {'BaseModel': BaseModel, 'User': User}
 
 class HBNBCommand(cmd.Cmd):
     """The command interpreter Class """
